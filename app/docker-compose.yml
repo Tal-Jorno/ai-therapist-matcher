@@ -1,0 +1,15 @@
+services:
+  db:
+    image: postgres:16
+    container_name: therapist_matcher_db
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: therapist_matcher
+    ports:
+      - "5432:5432"
+    volumes:
+      - therapist_matcher_pgdata:/var/lib/postgresql/data
+
+volumes:
+  therapist_matcher_pgdata:
