@@ -109,3 +109,21 @@ def update_therapist(
 
     logger.info("Therapist updated successfully. id=%s updated_fields=%s", therapist_id, list(updates.keys()))
     return therapist
+
+
+from fastapi import HTTPException
+
+@router.delete("/{therapist_id}")
+def delete_therapist(therapist_id: int, db: Session = Depends(get_db)):
+    logger.info("Delete therapist called. id=%s", therapist_id)
+
+    therapist = db.query(Therapist).filter(Therapist.id == therapist_id).first()
+    if therapist is None:
+        logger.info("Therapist not found for delete. id=%s", therapist_id)
+        raise HTTPException(status_code=404, detail="Therapist not found")
+
+    db.delete(therapist)
+    db.commit()
+
+    logger.info("Therapist deleted successfully. id=%s", therapist_id)
+    return {"status": "deleted", "id": therapist_id}
