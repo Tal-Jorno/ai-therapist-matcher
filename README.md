@@ -10,22 +10,21 @@ Backend service for managing therapists using FastAPI, PostgreSQL
 -   FastAPI
 -   PostgreSQL 16 (Docker)
 -   SQLAlchemy
--   pgAdmin (optional)
+-   pgAdmin
+-   Dozzle (Docker logs UI)
 
 ------------------------------------------------------------------------
 
-## Project Setup
-
-### 1. Clone the Repository
+## 1. Clone the Repository
 
 ``` bash
-git clone <your-repo-url>
-cd pythonProject7
+git clone https://github.com/Tal-Jorno/ai-therapist-matcher.git
+cd ai-therapist-matcher
 ```
 
 ------------------------------------------------------------------------
 
-### 2. Create Virtual Environment
+## 2. Create Virtual Environment (Local Development)
 
 ``` bash
 python -m venv .venv
@@ -48,12 +47,12 @@ source .venv/bin/activate
 Install dependencies:
 
 ``` bash
-pip install -r requirements.txt
+pip install -r app/requirements.txt
 ```
 
 ------------------------------------------------------------------------
 
-### 3. Start PostgreSQL (Docker)
+## 3. Run with Docker (Database + pgAdmin + Logs UI)
 
 Make sure Docker Desktop is running.
 
@@ -61,22 +60,41 @@ Make sure Docker Desktop is running.
 docker compose up -d
 ```
 
-This will start:
+This starts:
 
--   PostgreSQL on port 5432
+-   PostgreSQL → Port 5432
+-   pgAdmin → http://localhost:5050
+-   Dozzle (Logs UI) → http://localhost:9999
+
+Database credentials:
+
 -   Database: therapist_matcher
 -   Username: postgres
 -   Password: postgres
 
+If you get a container name conflict:
+
+``` bash
+docker compose down
+docker rm -f therapist_matcher_db therapist_pgadmin therapist_dozzle
+docker compose up -d
+```
+
+To stop services:
+
+``` bash
+docker compose down
+```
+
 ------------------------------------------------------------------------
 
-### 4. Run the Backend Server
+## 4. Run the Backend Server
 
 ``` bash
 uvicorn app.main:app --reload
 ```
 
-Server URL: http://127.0.0.1:8000
+Server: http://127.0.0.1:8000
 
 Swagger: http://127.0.0.1:8000/docs
 
@@ -84,27 +102,51 @@ Health Check: http://127.0.0.1:8000/health
 
 ------------------------------------------------------------------------
 
-## View the Database (pgAdmin)
+## View Database in pgAdmin
 
-Register a new server:
+Open: http://localhost:5050
 
--   Host: localhost
--   Port: 5432
--   Database: therapist_matcher
--   Username: postgres
--   Password: postgres
+Login: - Email: admin@admin.com - Password: admin
+
+Register new server: - Host: localhost - Port: 5432 - Database:
+therapist_matcher - Username: postgres - Password: postgres
 
 To view data: Schemas → public → Tables → therapists → View/Edit Data →
 All Rows
 
 ------------------------------------------------------------------------
 
-## Stop the Project
+## Logs (Docker UI)
 
-Stop backend: CTRL + C
+Open: http://localhost:9999
 
-Stop Docker:
+Select container: - therapist_matcher_db - therapist_pgadmin -
+therapist_dozzle
 
-``` bash
-docker compose down
-```
+------------------------------------------------------------------------
+
+## Project Structure
+
+app/
+
+-   api/
+-   db/
+-   models/
+-   schemas/
+-   logger_config.py
+-   main.py
+
+------------------------------------------------------------------------
+
+## Current Status
+
+-   Database connected and running
+-   therapists table exists
+-   POST /therapists works
+-   Data persists in PostgreSQL
+-   Swagger working
+-   Health endpoint working
+-   Logging configured
+-   Docker services running
+
+------------------------------------------------------------------------
