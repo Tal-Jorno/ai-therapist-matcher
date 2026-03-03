@@ -22,6 +22,21 @@ services:
     depends_on:
       - db
 
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: therapist_api
+    environment:
+      DATABASE_URL: postgresql+psycopg2://postgres:postgres@db:5432/therapist_matcher
+    ports:
+      - "8000:8000"
+    depends_on:
+      - db
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+    volumes:
+      - ./app:/app/app
+
   dozzle:
     image: amir20/dozzle:latest
     container_name: therapist_dozzle
