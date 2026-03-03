@@ -6,7 +6,10 @@ from app.db.database import engine
 from app.models.therapist import Therapist  # חשוב כדי שהטבלה תיווצר
 from app.api.therapists import router as therapists_router
 
+from app.logger_config import logger
 
+
+logger.info("Starting AI Therapist Matcher application...")
 # create tables
 Base.metadata.create_all(bind=engine)
 
@@ -28,4 +31,3 @@ def db_check():
         return {"db_response": result.scalar()}
 
 
-print("LOADED ROUTES:", [r.path for r in app.routes])
