@@ -1,6 +1,6 @@
 from pydantic import BaseModel
 from typing import Optional
-
+from decimal import Decimal
 
 class TherapistCreate(BaseModel):
     full_name: str
@@ -17,3 +17,13 @@ class TherapistResponse(TherapistCreate):
 
     class Config:
         from_attributes = True
+
+
+class TherapistUpdate(BaseModel):
+    full_name: str | None = None
+    specialization: str | None = None
+    bio: str | None = None
+    languages: str | None = None
+    city: str | None = None
+    is_online: bool | None = None
+    price_per_session: Decimal | None = None

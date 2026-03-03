@@ -34,6 +34,6 @@ def db_check():
             result = connection.execute(text("SELECT 1"))
             logger.info("Database connection successful.")
             return {"db_response": result.scalar()}
-    except Exception as e:
+    except Exception:
         logger.error("Database connection failed.", exc_info=True)
         return {"error": "Database connection failed"}
