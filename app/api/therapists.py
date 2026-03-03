@@ -5,11 +5,11 @@ from sqlalchemy.orm import Session
 
 from app.db.deps import get_db
 from app.models.therapist import Therapist
-from app.schemas.create_response_update import TherapistCreate, TherapistResponse, TherapistUpdate
+from app.schemas.therapists_schema import TherapistCreate, TherapistResponse, TherapistUpdate
 from app.logger_config import logger
 from sqlalchemy.exc import IntegrityError
 from app.models.user import User
-from app.schemas.create_response_update import TherapistRegisterRequest
+from app.schemas.therapists_schema import TherapistRegisterRequest
 
 
 router = APIRouter(prefix="/therapists", tags=["therapists"])

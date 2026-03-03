@@ -4,20 +4,24 @@ from sqlalchemy import text
 from app.db.base import Base
 from app.db.database import engine
 from app.models.therapist import Therapist
+from app.models.user import User  # חשוב שייטען
+from app.models.user_identity import UserIdentity  # חשוב שייטען
+
 from app.api.therapists import router as therapists_router
+from app.api.clients import router as clients_router
+
 from app.logger_config import logger
 
 
 logger.info("Starting AI Therapist Matcher application...")
 
-# create tables
 Base.metadata.create_all(bind=engine)
 logger.info("Database tables ensured.")
 
 app = FastAPI(title="AI Therapist Matcher")
 
-# connect router
 app.include_router(therapists_router)
+app.include_router(clients_router)
 
 
 @app.get("/health")
