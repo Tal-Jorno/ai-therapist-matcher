@@ -35,20 +35,20 @@ def get_therapists(
 
     query = db.query(Therapist)
 
-    if city is not None:
+    if city:
         city = city.strip()
         if city != "":
             query = query.filter(Therapist.city.ilike(f"%{city}%"))
 
-    if specialization is not None:
+    if specialization:
         specialization = specialization.strip()
         if specialization != "":
             query = query.filter(Therapist.specialization.ilike(f"%{specialization}%"))
 
-    if min_price is not None:
+    if min_price:
         query = query.filter(Therapist.price_per_session >= min_price)
 
-    if max_price is not None:
+    if max_price:
         query = query.filter(Therapist.price_per_session <= max_price)
 
     if is_online is not None:
@@ -80,7 +80,7 @@ def get_therapist_by_id(therapist_id: int, db: Session = Depends(get_db)):
     logger.info("Get therapist by id called. id=%s", therapist_id)
 
     therapist = db.query(Therapist).filter(Therapist.id == therapist_id).first()
-    if therapist is None:
+    if not therapist:
         logger.info("Therapist not found. id=%s", therapist_id)
         raise HTTPException(status_code=404, detail="Therapist not found")
 
@@ -95,7 +95,7 @@ def update_therapist(
     logger.info("Patch therapist called. id=%s", therapist_id)
 
     therapist = db.query(Therapist).filter(Therapist.id == therapist_id).first()
-    if therapist is None:
+    if not therapist:
         logger.info("Therapist not found for patch. id=%s", therapist_id)
         raise HTTPException(status_code=404, detail="Therapist not found")
 
@@ -111,14 +111,12 @@ def update_therapist(
     return therapist
 
 
-from fastapi import HTTPException
-
 @router.delete("/{therapist_id}")
 def delete_therapist(therapist_id: int, db: Session = Depends(get_db)):
     logger.info("Delete therapist called. id=%s", therapist_id)
 
     therapist = db.query(Therapist).filter(Therapist.id == therapist_id).first()
-    if therapist is None:
+    if not therapist:
         logger.info("Therapist not found for delete. id=%s", therapist_id)
         raise HTTPException(status_code=404, detail="Therapist not found")
 
