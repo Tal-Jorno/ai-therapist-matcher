@@ -1,127 +1,135 @@
+
 # AI Therapist Matcher
 
-Backend service for managing therapists using FastAPI, PostgreSQL
-(Docker), and SQLAlchemy.
+Backend service for managing therapists using FastAPI, PostgreSQL (Docker), and SQLAlchemy.
 
 ------------------------------------------------------------------------
 
 ## Tech Stack
 
--   FastAPI
--   PostgreSQL 16 (Docker)
--   SQLAlchemy
--   pgAdmin
--   Dozzle (Docker logs UI)
+- FastAPI
+- PostgreSQL 16 (Docker)
+- SQLAlchemy
+- pgAdmin
+- Dozzle (Docker Logs UI)
 
 ------------------------------------------------------------------------
 
 ## 1. Clone the Repository
 
-``` bash
+```bash
 git clone https://github.com/Tal-Jorno/ai-therapist-matcher.git
 cd ai-therapist-matcher
 ```
 
 ------------------------------------------------------------------------
 
-## 2. Create Virtual Environment (Local Development)
-
-``` bash
-python -m venv .venv
-```
-
-Activate:
-
-Windows:
-
-``` bash
-.venv\Scripts\activate
-```
-
-Mac/Linux:
-
-``` bash
-source .venv/bin/activate
-```
-
-Install dependencies:
-
-``` bash
-pip install -r app/requirements.txt
-```
-
-------------------------------------------------------------------------
-
-## 3. Run with Docker (Database + pgAdmin + Logs UI)
+## 2. Run Full System with Docker (Recommended)
 
 Make sure Docker Desktop is running.
 
-``` bash
-docker compose up -d
+Build and start all services:
+
+```bash
+docker compose up -d --build
 ```
 
 This starts:
 
--   PostgreSQL → Port 5432
--   pgAdmin → http://localhost:5050
--   Dozzle (Logs UI) → http://localhost:9999
+- FastAPI Backend → http://localhost:8000
+- Swagger UI → http://localhost:8000/docs
+- PostgreSQL → Port 5432
+- pgAdmin → http://localhost:5050
+- Dozzle (Logs UI) → http://localhost:9999
 
-Database credentials:
+------------------------------------------------------------------------
 
--   Database: therapist_matcher
--   Username: postgres
--   Password: postgres
+## Database Credentials
 
-If you get a container name conflict:
+- Database: therapist_matcher
+- Username: postgres
+- Password: postgres
 
-``` bash
-docker compose down
-docker rm -f therapist_matcher_db therapist_pgadmin therapist_dozzle
-docker compose up -d
-```
+------------------------------------------------------------------------
 
-To stop services:
+## Stop the System
 
-``` bash
+```bash
 docker compose down
 ```
 
 ------------------------------------------------------------------------
 
-## 4. Run the Backend Server
+## Updating the Application
 
-``` bash
-uvicorn app.main:app --reload
+### If you changed Python code (.py files):
+
+```bash
+docker compose restart api
 ```
 
-Server: http://127.0.0.1:8000
+No rebuild is required.
 
-Swagger: http://127.0.0.1:8000/docs
+---
 
-Health Check: http://127.0.0.1:8000/health
+### If you changed requirements.txt:
+
+```bash
+docker compose up -d --build
+```
+
+---
+
+### If you changed Dockerfile or docker-compose.yml:
+
+```bash
+docker compose up -d --build
+```
+
+---
+
+### If something is broken:
+
+```bash
+docker compose down
+docker compose up -d --build
+```
 
 ------------------------------------------------------------------------
 
 ## View Database in pgAdmin
 
-Open: http://localhost:5050
+Open:
+http://localhost:5050
 
-Login: - Email: admin@admin.com - Password: admin
+Login:
+- Email: admin@admin.com
+- Password: admin
 
-Register new server: - Host: localhost - Port: 5432 - Database:
-therapist_matcher - Username: postgres - Password: postgres
+Register a new server with:
 
-To view data: Schemas → public → Tables → therapists → View/Edit Data →
-All Rows
+- Host: db
+- Port: 5432
+- Database: therapist_matcher
+- Username: postgres
+- Password: postgres
+
+To view data:
+Schemas → public → Tables → therapists → View/Edit Data → All Rows
 
 ------------------------------------------------------------------------
 
 ## Logs (Docker UI)
 
-Open: http://localhost:9999
+Open:
+http://localhost:9999
 
-Select container: - therapist_matcher_db - therapist_pgadmin -
-therapist_dozzle
+Select container:
+
+- therapist_api
+- therapist_matcher_db
+- therapist_pgadmin
+- therapist_dozzle
 
 ------------------------------------------------------------------------
 
@@ -129,24 +137,25 @@ therapist_dozzle
 
 app/
 
--   api/
--   db/
--   models/
--   schemas/
--   logger_config.py
--   main.py
+- api/
+- db/
+- models/
+- schemas/
+- logger_config.py
+- main.py
 
 ------------------------------------------------------------------------
 
 ## Current Status
 
--   Database connected and running
--   therapists table exists
--   POST /therapists works
--   Data persists in PostgreSQL
--   Swagger working
--   Health endpoint working
--   Logging configured
--   Docker services running
+- API runs fully inside Docker
+- Database connected and running
+- therapists table exists
+- POST /therapists works
+- Data persists in PostgreSQL
+- Swagger working
+- Health endpoint working
+- Logging configured
+- Docker services running
 
 ------------------------------------------------------------------------

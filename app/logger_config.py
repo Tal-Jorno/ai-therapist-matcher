@@ -2,7 +2,7 @@ import logging
 import sys
 
 class LoggerSingleton:
-    _instance = None
+    _instance   = None
 
     @classmethod
     def get_logger(cls) -> logging.Logger:
