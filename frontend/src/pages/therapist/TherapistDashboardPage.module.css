@@ -1,0 +1,229 @@
+.layout {
+  display: grid;
+  gap: 16px;
+}
+
+.header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.title {
+  margin: 0;
+  font-size: 22px;
+  letter-spacing: -0.2px;
+}
+
+.subtitle {
+  margin: 6px 0 0;
+  color: var(--muted);
+  font-size: 14px;
+}
+
+.headerActions {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.primaryButton {
+  border: 1px solid transparent;
+  border-radius: 14px;
+  padding: 10px 14px;
+  font-weight: 650;
+  cursor: pointer;
+  color: white;
+  background: linear-gradient(135deg, var(--primary), var(--primary-2));
+}
+
+.secondaryButton {
+  appearance: none;
+  border: 1px solid var(--border);
+  background: color-mix(in oklab, var(--surface) 82%, transparent);
+  color: var(--text);
+  border-radius: 14px;
+  padding: 10px 14px;
+  cursor: pointer;
+}
+
+.primaryButton:disabled,
+.secondaryButton:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: 0.95fr 1.05fr;
+  gap: 16px;
+  align-items: start;
+}
+
+@media (max-width: 980px) {
+  .grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.profileTop {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.avatar {
+  width: 64px;
+  height: 64px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: color-mix(in oklab, var(--surface2) 75%, transparent);
+  display: grid;
+  place-items: center;
+  font-weight: 750;
+  letter-spacing: -0.3px;
+}
+
+.avatarImg {
+  width: 64px;
+  height: 64px;
+  border-radius: 999px;
+  object-fit: cover;
+  border: 1px solid var(--border);
+}
+
+.name {
+  margin: 0;
+  font-size: 18px;
+}
+
+.meta {
+  margin: 4px 0 0;
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.statusBox {
+  border: 1px solid var(--border);
+  background: color-mix(in oklab, var(--surface) 80%, transparent);
+  border-radius: 16px;
+  padding: 12px;
+  display: grid;
+  gap: 8px;
+}
+
+.statusTitle {
+  margin: 0;
+  font-size: 14px;
+  color: var(--muted);
+}
+
+.statusPill {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  padding: 8px 10px;
+  width: fit-content;
+  background: color-mix(in oklab, var(--surface2) 80%, transparent);
+}
+
+.dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 999px;
+  background: #f59e0b;
+}
+
+.dotOn {
+  background: #22c55e;
+}
+
+.kv {
+  display: grid;
+  grid-template-columns: 140px 1fr;
+  gap: 10px;
+  align-items: baseline;
+}
+
+.k {
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.v {
+  color: var(--text);
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.form {
+  display: grid;
+  gap: 12px;
+}
+
+.field {
+  display: grid;
+  gap: 6px;
+}
+
+.label {
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.input,
+.textarea {
+  width: 100%;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 10px 12px;
+  background: var(--surface);
+  color: var(--text);
+  font-family: inherit;
+}
+
+.textarea {
+  min-height: 110px;
+  resize: vertical;
+}
+
+.row2 {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+@media (max-width: 720px) {
+  .row2 {
+    grid-template-columns: 1fr;
+  }
+}
+
+.toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 10px 12px;
+  background: color-mix(in oklab, var(--surface) 82%, transparent);
+}
+
+.errorBox {
+  border: 1px solid color-mix(in oklab, #ef4444 35%, var(--border));
+  background: color-mix(in oklab, #ef4444 10%, var(--surface));
+  color: color-mix(in oklab, #ef4444 70%, var(--text));
+  border-radius: 14px;
+  padding: 10px 12px;
+}
+
+.loadingLine {
+  color: var(--muted);
+  font-size: 14px;
+}
+

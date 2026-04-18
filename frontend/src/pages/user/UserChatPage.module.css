@@ -1,0 +1,199 @@
+.layout {
+  display: grid;
+  grid-template-columns: 1.1fr 0.9fr;
+  gap: 16px;
+  align-items: start;
+}
+
+@media (max-width: 980px) {
+  .layout {
+    grid-template-columns: 1fr;
+  }
+}
+
+.panelHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.panelTitle {
+  margin: 0;
+  font-size: 18px;
+  color: var(--text);
+}
+
+.meta {
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.ghostButton {
+  appearance: none;
+  border: 1px solid var(--border);
+  background: color-mix(in oklab, var(--surface) 80%, transparent);
+  color: var(--text);
+  border-radius: 12px;
+  padding: 8px 10px;
+  cursor: pointer;
+}
+
+.ghostButton:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.chatWrap {
+  display: grid;
+  grid-template-rows: 1fr auto;
+  gap: 12px;
+  min-height: 520px;
+}
+
+.messages {
+  border: 1px solid var(--border);
+  background: color-mix(in oklab, var(--surface) 82%, transparent);
+  border-radius: 16px;
+  padding: 12px;
+  overflow: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.bubbleRow {
+  display: flex;
+}
+
+.bubble {
+  max-width: 78%;
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 10px 12px;
+  background: var(--surface);
+  color: var(--text);
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.userRow {
+  justify-content: flex-end;
+}
+
+.userBubble {
+  background: color-mix(in oklab, var(--primary) 10%, var(--surface));
+  border-color: color-mix(in oklab, var(--primary) 22%, var(--border));
+}
+
+.assistantRow {
+  justify-content: flex-start;
+}
+
+.assistantBubble {
+  background: color-mix(in oklab, var(--surface2) 80%, transparent);
+}
+
+.composer {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 10px;
+}
+
+.input {
+  width: 100%;
+  resize: vertical;
+  min-height: 46px;
+  max-height: 160px;
+  border-radius: 14px;
+  border: 1px solid var(--border);
+  padding: 12px;
+  background: var(--surface);
+  color: var(--text);
+  font-family: inherit;
+  line-height: 1.4;
+}
+
+.send {
+  border: 1px solid transparent;
+  border-radius: 14px;
+  padding: 12px 14px;
+  font-weight: 650;
+  cursor: pointer;
+  color: white;
+  background: linear-gradient(135deg, var(--primary), var(--primary-2));
+}
+
+.send:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.error {
+  border: 1px solid color-mix(in oklab, #ef4444 35%, var(--border));
+  background: color-mix(in oklab, #ef4444 10%, var(--surface));
+  color: color-mix(in oklab, #ef4444 70%, var(--text));
+  border-radius: 14px;
+  padding: 10px 12px;
+}
+
+.resultsWrap {
+  display: grid;
+  gap: 12px;
+}
+
+.therapistCard {
+  display: grid;
+  gap: 8px;
+}
+
+.kv {
+  display: grid;
+  grid-template-columns: 120px 1fr;
+  gap: 8px;
+  align-items: baseline;
+}
+
+.k {
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.v {
+  color: var(--text);
+}
+
+.reason {
+  border-top: 1px solid var(--border);
+  padding-top: 10px;
+  color: var(--muted);
+}
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  border: 1px solid var(--border);
+  background: color-mix(in oklab, var(--surface2) 70%, transparent);
+  border-radius: 999px;
+  padding: 6px 10px;
+  font-size: 13px;
+  color: var(--text);
+}
+
+.chipDot {
+  width: 8px;
+  height: 8px;
+  border-radius: 999px;
+  background: #22c55e;
+}
+
+.chipDotOff {
+  background: #94a3b8;
+}
+
+.loadingLine {
+  color: var(--muted);
+  font-size: 14px;
+}
+

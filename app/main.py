@@ -1,4 +1,5 @@
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy import text
 
 from app.db.base import Base
@@ -22,6 +23,20 @@ Base.metadata.create_all(bind=engine)
 logger.info("Database tables ensured.")
 
 app = FastAPI(title="AI Therapist Matcher")
+
+# Allow the Vite dev server to call the API from the browser (CORS).
+# Without this, the browser will fail the preflight (OPTIONS) request.
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=[
+        "http://localhost:5173",
+        "http://127.0.0.1:5173",
+    ],
+    allow_credentials=False,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
 app.include_router(match_router)
 app.include_router(therapists_router)
 app.include_router(clients_router)

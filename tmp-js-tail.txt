@@ -1,0 +1,50 @@
+ [];
+  for (const d of problemDefs) {
+    let idx = Infinity;
+    for (const re of (d.res ?? [])) idx = Math.min(idx, matchIndex(re, message));
+    if (idx < Infinity) hits.push({ value: d.value, idx });
+  }
+  hits.sort((a, b) => a.idx - b.idx);
+  const picked = uniqNonEmpty(hits.map(h => h.value)).slice(0, 2);
+  if (picked.length) extraction.problem = picked.join(', ');
+}
+
+// Fallback: if no structured problem found, use a cleaned version of the message.
+if (!extraction.problem) {
+  let fb = message;
+  // Remove common “looking for therapist” boilerplate
+  fb = fb.replace(/\b(i\s*am|i'm|im|we\s*are|we're|we)\s+(looking\s+for|searching\s+for|seeking|need|want)\b[^\n\.]{0,80}\b(therapist|therapy|counsel(or|or)|psychologist)\b/igu, ' ');
+  fb = fb.replace(/\b(looking\s+for|need|want)\s+(a\s+)?(therapist|therapy|counsel(or|or)|psychologist)\b/igu, ' ');
+  // Remove language mentions
+  fb = fb.replace(/\b(in\s+)?(english|hebrew|ivrit|arabic|russian|french|spanish)\b/igu, ' ');
+  fb = fb.replace(/אנגלית|עברית|ערבית|רוסית|צרפתית|ספרדית/gu, ' ');
+  // Remove therapy type mentions
+  fb = fb.replace(/\b(cbt|emdr|psychodynamic|mindfulness|mbsr|mbct)\b/igu, ' ');
+  fb = fb.replace(/קוגניטיבי\s*התנהגותי|טיפול\s*זוגי|טיפול\s*משפחתי|פסיכודינמי|מיינדפולנס/gu, ' ');
+  // Remove simple location phrase
+  fb = fb.replace(/\b(?:in|near|around|from)\s+[A-Za-z][A-Za-z'\-]*(?:\s+[A-Za-z][A-Za-z'\-]*){0,3}\b/igu, ' ');
+  fb = clean(fb);
+  if (fb.length > 140) fb = clean(fb.slice(0, 140));
+  extraction.problem = fb || clean(message).slice(0, 140);
+}
+
+// assistant_message must use extracted values
+const assistant_message =
+  'Extracted request: ' +
+  'problem=' + (extraction.problem || '') + ' ' +
+  'city=' + (extraction.city || '') + ' ' +
+  'language=' + (extraction.language || '') + ' ' +
+  'therapy_type=' + (extraction.therapy_type || '');
+
+return [
+  {
+    json: {
+      assistant_message,
+      result: {
+        top5: [],
+        reasons: [],
+        extraction,
+      },
+    },
+  },
+];

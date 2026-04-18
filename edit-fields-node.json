@@ -1,0 +1,23 @@
+{
+  "parameters": {
+    "assignments": {
+      "assignments": [
+        {
+          "id": "023de60e-7490-4d8b-89b9-b5275c2ac671",
+          "name": "assistant_message",
+          "value": "hello from n8n",
+          "type": "string"
+        }
+      ]
+    },
+    "options": {}
+  },
+  "type": "n8n-nodes-base.set",
+  "typeVersion": 3.4,
+  "position": [
+    -144,
+    -176
+  ],
+  "id": "ec380956-a374-40db-8e68-49e21a686971",
+  "name": "Edit Fields"
+}

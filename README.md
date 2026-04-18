@@ -1,32 +1,32 @@
-
 # AI Therapist Matcher
 
-Backend service for managing therapists using FastAPI, PostgreSQL (Docker), and SQLAlchemy.
+A full-stack therapist matching app:
 
-------------------------------------------------------------------------
+- Backend: FastAPI + SQLAlchemy + Postgres
+- Frontend: React + Vite + React Router (Hebrew RTL UI)
 
-## Tech Stack
+## Repository layout
 
-- FastAPI
-- PostgreSQL 16 (Docker)
+- Backend code: [`app/`](app:1)
+- Frontend code: [`frontend/`](frontend:1)
+
+## Tech stack
+
+Backend
+
+- FastAPI (Uvicorn)
 - SQLAlchemy
-- pgAdmin
-- Dozzle (Docker Logs UI)
+- PostgreSQL 16 (Docker)
 
-------------------------------------------------------------------------
+Frontend
 
-## 1. Clone the Repository
+- React + TypeScript
+- Vite
+- react-router-dom
 
-```bash
-git clone https://github.com/Tal-Jorno/ai-therapist-matcher.git
-cd ai-therapist-matcher
-```
+## Running the full system with Docker (recommended)
 
-------------------------------------------------------------------------
-
-## 2. Run Full System with Docker (Recommended)
-
-Make sure Docker Desktop is running.
+Prerequisite: Docker Desktop is running.
 
 Build and start all services:
 
@@ -36,126 +36,114 @@ docker compose up -d --build
 
 This starts:
 
-- FastAPI Backend → http://localhost:8000
-- Swagger UI → http://localhost:8000/docs
-- PostgreSQL → Port 5432
-- pgAdmin → http://localhost:5050
-- Dozzle (Logs UI) → http://localhost:9999
+- API: http://localhost:8000
+- Swagger: http://localhost:8000/docs
+- Postgres: localhost:5432
+- pgAdmin: http://localhost:5050
+- Dozzle (logs): http://localhost:9999
 
-------------------------------------------------------------------------
-
-## Database Credentials
-
-- Database: therapist_matcher
-- Username: postgres
-- Password: postgres
-
-------------------------------------------------------------------------
-
-## Stop the System
+Stop everything:
 
 ```bash
 docker compose down
 ```
 
-------------------------------------------------------------------------
+### Database credentials
 
-## Updating the Application
+- Database: `therapist_matcher`
+- Username: `postgres`
+- Password: `postgres`
 
-### If you changed Python code (.py files):
+## Local development (without Docker)
 
-```bash
-docker compose restart api
-```
+You can also run frontend/backend separately.
 
-No rebuild is required.
+### Backend
 
----
-
-### If you changed requirements.txt:
+From repo root:
 
 ```bash
-docker compose up -d --build
+python -m venv .venv
+.
 ```
 
----
+Then install deps and run Uvicorn (exact command may vary by your setup).
 
-### If you changed Dockerfile or docker-compose.yml:
+Notes:
+
+- The API base URL used by the frontend defaults to `http://localhost:8000` (see [`frontend/src/services/env.ts`](frontend/src/services/env.ts:1)).
+- CORS is enabled for the Vite dev server origins (`http://localhost:5173`, `http://127.0.0.1:5173`) in [`app/main.py`](app/main.py:1).
+
+### Frontend
+
+From repo root:
 
 ```bash
-docker compose up -d --build
+cd frontend
+npm install
+npm run dev -- --host
 ```
 
----
+## Environment variables
 
-### If something is broken:
+Frontend
+
+- `VITE_API_BASE_URL` (optional)
+  - Default: `http://localhost:8000`
+  - Used by [`createApiClient()`](frontend/src/services/apiClient.ts:20)
+
+## Auth/session (frontend)
+
+This project uses a minimal frontend session layer:
+
+- Stored in `localStorage` under `psychologi_session_v1`.
+- Implemented in one consolidated module: [`frontend/src/auth/types.ts`](frontend/src/auth/types.ts:1)
+  - [`AuthProvider`](frontend/src/auth/types.ts:86)
+  - [`useAuth()`](frontend/src/auth/types.ts:121)
+  - [`RequireRole`](frontend/src/auth/types.ts:130)
+
+### Roles
+
+- `client`
+- `therapist`
+
+### Protected routes
+
+Configured in [`frontend/src/App.tsx`](frontend/src/App.tsx:1):
+
+- Client only:
+  - `/user/chat`
+  - `/user/search`
+- Therapist only:
+  - `/therapist/dashboard`
+
+Unauthenticated users are redirected to `/login`.
+
+## API endpoints used by the frontend
+
+Auth-related calls are centralized in [`frontend/src/services/authApi.ts`](frontend/src/services/authApi.ts:1):
+
+- Client register: `POST /clients/register` ([`app/api/clients.py`](app/api/clients.py:14))
+- Therapist register: `POST /therapists/register` ([`app/api/therapists.py`](app/api/therapists.py:68))
+- Login-by-id:
+  - client: `GET /clients/{id}` ([`app/api/clients.py`](app/api/clients.py:32))
+  - therapist: `GET /therapists/{id}` ([`app/api/therapists.py`](app/api/therapists.py:98))
+
+## Common commands
+
+Frontend (from [`frontend/`](frontend:1))
 
 ```bash
-docker compose down
-docker compose up -d --build
+npm run dev -- --host
+npm run lint
+npm run build
 ```
 
-------------------------------------------------------------------------
+## Troubleshooting
 
-## View Database in pgAdmin
+### Browser registration/login fails with generic network errors
 
-Open:
-http://localhost:5050
+If the API is reachable via curl but the browser fails, it is usually a CORS/preflight issue.
 
-Login:
-- Email: admin@admin.com
-- Password: admin
-
-Register a new server with:
-
-- Host: db
-- Port: 5432
-- Database: therapist_matcher
-- Username: postgres
-- Password: postgres
-
-To view data:
-Schemas → public → Tables → therapists → View/Edit Data → All Rows
-
-------------------------------------------------------------------------
-
-## Logs (Docker UI)
-
-Open:
-http://localhost:9999
-
-Select container:
-
-- therapist_api
-- therapist_matcher_db
-- therapist_pgadmin
-- therapist_dozzle
-
-------------------------------------------------------------------------
-
-## Project Structure
-
-app/
-
-- api/
-- db/
-- models/
-- schemas/
-- logger_config.py
-- main.py
-
-------------------------------------------------------------------------
-
-## Current Status
-
-- API runs fully inside Docker
-- Database connected and running
-- therapists table exists
-- POST /therapists works
-- Data persists in PostgreSQL
-- Swagger working
-- Health endpoint working
-- Logging configured
-- Docker services running
-
-------------------------------------------------------------------------
+- CORS middleware is configured in [`app/main.py`](app/main.py:1).
+- Frontend base URL is configured in [`frontend/src/services/env.ts`](frontend/src/services/env.ts:1).
