@@ -4,11 +4,15 @@ from sqlalchemy import text
 
 from app.db.base import Base
 from app.db.database import engine
+from app.db.schema_patch import apply_auth_schema_patch
 from app.models.therapist import Therapist
 from app.models.user import User  # חשוב שייטען
 from app.models.user_identity import UserIdentity  # חשוב שייטען
+from app.models.email_verification_code import EmailVerificationCode  # חשוב שייטען
+from app.models.password_reset_token import PasswordResetToken  # חשוב שייטען
 from app.api.therapists import router as therapists_router
 from app.api.clients import router as clients_router
+from app.api.auth import router as auth_router
 from app.logger_config import logger
 from app.models.match_session import MatchSession
 from app.models.match_message import MatchMessage
@@ -21,6 +25,9 @@ logger.info("Starting AI Therapist Matcher application...")
 
 Base.metadata.create_all(bind=engine)
 logger.info("Database tables ensured.")
+
+# Apply startup-safe schema migrations for auth model/schema drift.
+apply_auth_schema_patch(engine)
 
 app = FastAPI(title="AI Therapist Matcher")
 
@@ -40,6 +47,7 @@ app.add_middleware(
 app.include_router(match_router)
 app.include_router(therapists_router)
 app.include_router(clients_router)
+app.include_router(auth_router)
 
 
 @app.get("/health")

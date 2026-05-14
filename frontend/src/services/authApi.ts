@@ -3,6 +3,14 @@ import type { AuthSession, UserRole } from '../auth/types'
 
 type BackendRole = 'CLIENT' | 'THERAPIST'
 
+type BackendSession = {
+  user_id: number
+  role: BackendRole
+  email: string | null
+  full_name: string | null
+  email_verified: boolean
+}
+
 function normalizeRole(role: BackendRole | string): UserRole {
   return role === 'THERAPIST' ? 'therapist' : 'client'
 }
@@ -11,27 +19,48 @@ function safeName(value: unknown, fallback: string) {
   return typeof value === 'string' && value.trim() ? value.trim() : fallback
 }
 
+function toSession(res: BackendSession): AuthSession {
+  return {
+    user_id: res.user_id,
+    role: normalizeRole(res.role),
+    email: res.email ?? null,
+    full_name:
+      normalizeRole(res.role) === 'therapist'
+        ? safeName(res.full_name, 'מטפל/ת')
+        : safeName(res.full_name, 'מטופל/ת'),
+    email_verified: Boolean(res.email_verified),
+  }
+}
+
 export const authApi = {
-  registerClient: async (body: { email: string; full_name?: string }) => {
+  googleLogin: async (body: { id_token: string; role?: UserRole }) => {
+    const res = await api.post<BackendSession, { id_token: string; role: BackendRole }>(
+      '/auth/google',
+      {
+        id_token: body.id_token,
+        role: body.role === 'therapist' ? 'THERAPIST' : 'CLIENT',
+      },
+    )
+    return toSession(res)
+  },
+
+  registerEmail: async (body: { role: UserRole; email: string; password: string; full_name?: string }) => {
     const res = await api.post<
-      { user_id: number; role: BackendRole; email: string; full_name: string | null },
-      { email: string; full_name?: string | null }
-    >('/clients/register', {
+      { session: BackendSession; dev_verify_token?: string; dev_verify_url?: string },
+      { role: BackendRole; email: string; password: string; full_name?: string | null }
+    >('/auth/register', {
+      role: body.role === 'therapist' ? 'THERAPIST' : 'CLIENT',
       email: body.email,
+      password: body.password,
       full_name: body.full_name?.trim() ? body.full_name.trim() : null,
     })
 
-    const session: AuthSession = {
-      user_id: res.user_id,
-      role: normalizeRole(res.role),
-      email: res.email ?? null,
-      full_name: safeName(res.full_name, 'מטופל/ת'),
-    }
-    return session
+    return { session: toSession(res.session), dev_verify_url: res.dev_verify_url, dev_verify_token: res.dev_verify_token }
   },
 
-  registerTherapist: async (body: {
+  registerTherapistEmail: async (body: {
     email: string
+    password: string
     full_name: string
     specialization: string
     city?: string
@@ -41,10 +70,11 @@ export const authApi = {
     price_per_session?: number | null
   }) => {
     const res = await api.post<
-      { user_id: number; full_name: string; specialization: string },
+      { session: BackendSession; dev_verify_token?: string; dev_verify_url?: string },
       Record<string, unknown>
-    >('/therapists/register', {
+    >('/auth/therapist/register', {
       email: body.email,
+      password: body.password,
       full_name: body.full_name,
       specialization: body.specialization,
       bio: body.bio?.trim() ? body.bio.trim() : null,
@@ -54,43 +84,27 @@ export const authApi = {
       price_per_session: body.price_per_session ?? null,
     })
 
-    const session: AuthSession = {
-      user_id: res.user_id,
-      role: 'therapist',
-      email: body.email,
-      full_name: safeName(res.full_name, 'מטפל/ת'),
-    }
-    return session
+    return { session: toSession(res.session), dev_verify_url: res.dev_verify_url, dev_verify_token: res.dev_verify_token }
   },
 
-  loginById: async (opts: { role: UserRole; user_id: number }) => {
-    if (opts.role === 'client') {
-      const res = await api.get<
-        { id: number; role: BackendRole; email: string; full_name: string | null }
-      >(`/clients/${opts.user_id}`)
+  loginEmail: async (body: { email: string; password: string }) => {
+    const res = await api.post<BackendSession, { email: string; password: string }>('/auth/login', body)
+    return toSession(res)
+  },
 
-      const session: AuthSession = {
-        user_id: res.id,
-        role: normalizeRole(res.role),
-        email: res.email ?? null,
-        full_name: safeName(res.full_name, 'מטופל/ת'),
-      }
-      return session
-    }
+  verifyEmail: async (body: { token: string }) => {
+    const res = await api.post<BackendSession, { token: string }>('/auth/verify-email', body)
+    return toSession(res)
+  },
 
-    const res = await api.get<{ user_id: number; full_name: string }>(
-      `/therapists/${opts.user_id}`,
+  resendVerification: async (body: { email: string }) => {
+    const res = await api.post<{ status: 'ok'; dev_verify_url?: string }, { email: string }>(
+      '/auth/resend-verification',
+      body,
     )
-
-    const session: AuthSession = {
-      user_id: res.user_id,
-      role: 'therapist',
-      full_name: safeName(res.full_name, 'מטפל/ת'),
-      email: null,
-    }
-    return session
+    return res
   },
 
   isNotFound: (e: unknown) => e instanceof ApiError && e.status === 404,
+  isUnauthorized: (e: unknown) => e instanceof ApiError && e.status === 401,
 }
-

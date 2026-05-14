@@ -31,12 +31,25 @@
 
 .ghostButton {
   appearance: none;
-  border: 1px solid var(--border);
-  background: color-mix(in oklab, var(--surface) 80%, transparent);
+  border: 1px solid color-mix(in oklab, var(--border) 88%, transparent);
+  background: color-mix(in oklab, var(--glass-strong) 66%, transparent);
+  backdrop-filter: blur(10px);
   color: var(--text);
   border-radius: 12px;
   padding: 8px 10px;
   cursor: pointer;
+  font-weight: 650;
+  transition:
+    transform var(--t-fast) var(--ease-out),
+    background var(--t-med) var(--ease-out),
+    border-color var(--t-med) var(--ease-out),
+    box-shadow var(--t-med) var(--ease-out);
+}
+
+.ghostButton:hover {
+  transform: translateY(-1px);
+  border-color: color-mix(in oklab, var(--primary) 16%, var(--border));
+  box-shadow: 0 16px 50px rgba(15, 23, 42, 0.08);
 }
 
 .ghostButton:disabled {
@@ -52,8 +65,9 @@
 }
 
 .messages {
-  border: 1px solid var(--border);
-  background: color-mix(in oklab, var(--surface) 82%, transparent);
+  border: 1px solid color-mix(in oklab, var(--border) 88%, transparent);
+  background: color-mix(in oklab, var(--glass-strong) 70%, transparent);
+  backdrop-filter: blur(12px);
   border-radius: 16px;
   padding: 12px;
   overflow: auto;
@@ -68,13 +82,14 @@
 
 .bubble {
   max-width: 78%;
-  border: 1px solid var(--border);
+  border: 1px solid color-mix(in oklab, var(--border) 88%, transparent);
   border-radius: 16px;
   padding: 10px 12px;
-  background: var(--surface);
+  background: color-mix(in oklab, var(--surface) 92%, transparent);
   color: var(--text);
   white-space: pre-wrap;
   word-break: break-word;
+  box-shadow: 0 12px 34px rgba(15, 23, 42, 0.06);
 }
 
 .userRow {
@@ -91,7 +106,7 @@
 }
 
 .assistantBubble {
-  background: color-mix(in oklab, var(--surface2) 80%, transparent);
+  background: color-mix(in oklab, var(--surface2) 82%, transparent);
 }
 
 .composer {
@@ -106,12 +121,28 @@
   min-height: 46px;
   max-height: 160px;
   border-radius: 14px;
-  border: 1px solid var(--border);
+  border: 1px solid color-mix(in oklab, var(--border) 88%, transparent);
   padding: 12px;
-  background: var(--surface);
+  background: color-mix(in oklab, var(--glass-strong) 66%, transparent);
+  backdrop-filter: blur(10px);
   color: var(--text);
   font-family: inherit;
   line-height: 1.4;
+  outline: none;
+  transition:
+    border-color var(--t-med) var(--ease-out),
+    box-shadow var(--t-med) var(--ease-out),
+    background var(--t-med) var(--ease-out);
+}
+
+.input:hover {
+  border-color: color-mix(in oklab, var(--primary) 16%, var(--border));
+}
+
+.input:focus {
+  border-color: color-mix(in oklab, var(--primary) 55%, var(--border));
+  box-shadow: var(--ring);
+  background: color-mix(in oklab, var(--surface) 84%, transparent);
 }
 
 .send {
@@ -122,6 +153,19 @@
   cursor: pointer;
   color: white;
   background: linear-gradient(135deg, var(--primary), var(--primary-2));
+  box-shadow:
+    0 16px 46px rgba(109, 40, 217, 0.22),
+    0 10px 26px rgba(37, 99, 235, 0.12);
+  transition:
+    transform var(--t-fast) var(--ease-out),
+    box-shadow var(--t-med) var(--ease-out);
+}
+
+.send:hover {
+  transform: translateY(-1px);
+  box-shadow:
+    0 20px 60px rgba(109, 40, 217, 0.26),
+    0 12px 34px rgba(37, 99, 235, 0.16);
 }
 
 .send:disabled {

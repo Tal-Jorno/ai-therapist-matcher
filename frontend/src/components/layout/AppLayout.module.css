@@ -7,19 +7,20 @@
 .main {
   flex: 1;
   width: 100%;
-  max-width: 1100px;
+  max-width: var(--container);
   margin: 0 auto;
-  padding: 28px 20px 40px;
+  padding: 26px 20px 48px;
 }
 
 .footer {
-  border-top: 1px solid var(--border);
-  background: var(--surface);
+  border-top: 1px solid color-mix(in oklab, var(--border) 85%, transparent);
+  background: color-mix(in oklab, var(--glass-strong) 68%, transparent);
+  backdrop-filter: blur(12px);
 }
 
 .footerInner {
   width: 100%;
-  max-width: 1100px;
+  max-width: var(--container);
   margin: 0 auto;
   padding: 18px 20px;
   display: flex;

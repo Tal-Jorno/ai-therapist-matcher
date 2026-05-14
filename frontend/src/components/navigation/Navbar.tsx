@@ -1,6 +1,7 @@
 import { NavLink, useNavigate } from 'react-router-dom'
 import styles from './Navbar.module.css'
 import { useAuth } from '../../auth/types'
+import { BRAND_NAME_HE } from '../../constants/brand'
 
 function navClassName({ isActive }: { isActive: boolean }) {
   return isActive ? `${styles.link} ${styles.active}` : styles.link
@@ -16,7 +17,7 @@ export function Navbar() {
         <div>
           <NavLink to="/" className={styles.brandLink}>
             <span className={styles.dot} aria-hidden="true" />
-            <span>פסיכולוגי</span>
+            <span>{BRAND_NAME_HE}</span>
           </NavLink>
         </div>
 
@@ -76,6 +77,11 @@ export function Navbar() {
               התנתקות
             </button>
           ) : null}
+
+          {/* subtle primary CTA (same route, just styled) */}
+          <NavLink to="/user/chat" className={styles.ctaLink}>
+            התאמה עם AI
+          </NavLink>
         </nav>
       </div>
     </header>

@@ -22,6 +22,7 @@ export type AuthSession = {
   role: UserRole
   full_name: string
   email?: string | null
+  email_verified?: boolean
 }
 
 // -----------------
@@ -38,7 +39,8 @@ function isAuthSession(value: unknown): value is AuthSession {
     typeof v.user_id === 'number' &&
     (v.role === 'client' || v.role === 'therapist') &&
     typeof v.full_name === 'string' &&
-    (v.email === undefined || v.email === null || typeof v.email === 'string')
+    (v.email === undefined || v.email === null || typeof v.email === 'string') &&
+    (v.email_verified === undefined || typeof v.email_verified === 'boolean')
   )
 }
 

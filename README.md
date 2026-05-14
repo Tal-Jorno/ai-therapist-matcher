@@ -1,4 +1,4 @@
-# AI Therapist Matcher
+# AI Therapist Matcher (חפשיכולוג)
 
 A full-stack therapist matching app:
 

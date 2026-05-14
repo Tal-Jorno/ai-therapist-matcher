@@ -4,6 +4,9 @@ import { Card } from '../components/ui/Card'
 import { useAuth } from '../auth/types'
 import { authApi } from '../services/authApi'
 import type { UserRole } from '../auth/types'
+import styles from './AuthPage.module.css'
+import { env } from '../services/env'
+import { googlePromptForIdToken } from '../auth/google'
 
 type LocationState = { from?: { pathname?: string } }
 
@@ -13,9 +16,13 @@ export function LoginPage() {
   const location = useLocation()
 
   const [role, setRole] = useState<UserRole>('client')
-  const [userId, setUserId] = useState('')
+  const [email, setEmail] = useState('')
+  const [password, setPassword] = useState('')
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [info, setInfo] = useState<string | null>(null)
+
+  const isGoogleEnabled = Boolean(env.googleClientId)
 
   const fromPath = useMemo(() => {
     const st = location.state as LocationState | null
@@ -25,25 +32,52 @@ export function LoginPage() {
 
   const defaultPath = role === 'therapist' ? '/therapist/dashboard' : '/user/chat'
 
-  async function onLogin() {
-    const id = Number(userId)
-    if (!Number.isFinite(id) || id <= 0) {
-      setError('אנא הזינו מזהה משתמש/ת תקין (מספר).')
+  async function onLoginEmail() {
+    const e = email.trim()
+    if (!e) {
+      setError('אנא הזינו אימייל תקין.')
+      return
+    }
+    if (!password) {
+      setError('אנא הזינו סיסמה.')
       return
     }
 
     setIsLoading(true)
     setError(null)
+    setInfo(null)
     try {
-      const next = await authApi.loginById({ role, user_id: id })
+      const next = await authApi.loginEmail({ email: e, password })
       setSession(next)
+
+      if (!next.email_verified) {
+        setInfo('התחברתם בהצלחה, אבל צריך לאמת את האימייל. בדקו את תיבת הדואר שלכם.')
+        navigate('/verify-email', { replace: true })
+        return
+      }
+
       navigate(fromPath ?? defaultPath, { replace: true })
     } catch (e) {
-      if (authApi.isNotFound(e)) {
-        setError('לא מצאנו משתמש/ת עם מזהה כזה. בדקו את המספר ונסו שוב.')
-      } else {
-        setError('לא הצלחנו להתחבר כרגע. נסו שוב בעוד רגע.')
-      }
+      if (authApi.isUnauthorized(e)) setError('אימייל או סיסמה לא נכונים.')
+      else setError('לא הצלחנו להתחבר כרגע. נסו שוב בעוד רגע.')
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  async function onLoginGoogle() {
+    if (!env.googleClientId) return
+
+    setIsLoading(true)
+    setError(null)
+    setInfo(null)
+    try {
+      const idToken = await googlePromptForIdToken({ clientId: env.googleClientId })
+      const next = await authApi.googleLogin({ id_token: idToken, role })
+      setSession(next)
+      navigate(fromPath ?? defaultPath, { replace: true })
+    } catch {
+      setError('לא הצלחנו להתחבר עם Google כרגע. נסו שוב בעוד רגע.')
     } finally {
       setIsLoading(false)
     }
@@ -51,7 +85,110 @@ export function LoginPage() {
 
   return (
     <div className="stack">
-      <Card title="התחברות">
+      <div>
+        <h1 className={styles.title}>התחברות</h1>
+        <p className={styles.subtitle}>בחרו את הדרך הנוחה לכם להתחבר.</p>
+      </div>
+
+      <div className={styles.wrap}>
+        <div className="stack">
+          <Card>
+            <div className="stack">
+              <div className={styles.btnRow}>
+                <span className={styles.pill}>תפקיד</span>
+                <select
+                  value={role}
+                  onChange={(e) => setRole(e.target.value as UserRole)}
+                  className={styles.input}
+                  disabled={isLoading}
+                >
+                  <option value="client">מטופל/ת</option>
+                  <option value="therapist">מטפל/ת</option>
+                </select>
+              </div>
+
+              <div className={styles.sep} />
+
+              <h3 className={styles.sectionTitle}>התחברות עם Google</h3>
+              <button
+                type="button"
+                className={`${styles.btn} ${styles.btnGoogle}`}
+                onClick={() => void onLoginGoogle()}
+                disabled={isLoading || !isGoogleEnabled}
+              >
+                התחברות עם Google
+              </button>
+              {!isGoogleEnabled && import.meta.env.DEV ? (
+                <p className={styles.hint} style={{ direction: 'ltr', textAlign: 'left' }}>
+                  DEV: Google Login כבוי. כדי להפעיל: הגדירו <code>googleClientId</code> ב-
+                  <code>frontend/public/config.json</code>.
+                </p>
+              ) : null}
+              <p className={styles.hint}>
+                ברירת המחדל בהרשמה עם Google היא למטופלים. למטפלים מומלץ ליצור חשבון עם אימייל וסיסמה.
+              </p>
+
+              <div className={styles.sep} />
+
+              <h3 className={styles.sectionTitle}>התחברות עם אימייל וסיסמה</h3>
+              <form
+                className="stack"
+                onSubmit={(e) => {
+                  e.preventDefault()
+                  void onLoginEmail()
+                }}
+              >
+                <label className={styles.field}>
+                  אימייל
+                  <input
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    className={styles.input}
+                    disabled={isLoading}
+                    required
+                    inputMode="email"
+                    autoComplete="email"
+                  />
+                </label>
+                <label className={styles.field}>
+                  סיסמה
+                  <input
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    className={styles.input}
+                    disabled={isLoading}
+                    required
+                    type="password"
+                    autoComplete="current-password"
+                  />
+                </label>
+
+                {error ? <p className={styles.error}>{error}</p> : null}
+                {info ? <p className={styles.success}>{info}</p> : null}
+
+                <div className={styles.btnRow}>
+                  <button type="submit" className={`${styles.btn} ${styles.btnPrimary}`} disabled={isLoading}>
+                    התחברות
+                  </button>
+                  <Link to="/register">הרשמה</Link>
+                </div>
+              </form>
+            </div>
+          </Card>
+        </div>
+
+        <div className={styles.side}>
+          <Card title="מדריך קצר">
+            <ul className="list">
+              <li>לאחר התחברות: מטופל/ת → /user/chat</li>
+              <li>לאחר התחברות: מטפל/ת → /therapist/dashboard</li>
+              <li>חשבונות אימייל/סיסמה דורשים אימות מייל לפני שימוש מלא.</li>
+            </ul>
+          </Card>
+        </div>
+      </div>
+
+      <Card>
         {session ? (
           <div className="stack">
             <p style={{ margin: 0 }}>
@@ -62,52 +199,11 @@ export function LoginPage() {
             </Link>
           </div>
         ) : (
-          <form
-            className="stack"
-            onSubmit={(e) => {
-              e.preventDefault()
-              void onLogin()
-            }}
-          >
-            <label>
-              מי אתם?
-              <select
-                value={role}
-                onChange={(e) => setRole(e.target.value as UserRole)}
-                style={{ width: '100%', marginTop: 6 }}
-                disabled={isLoading}
-              >
-                <option value="client">מטופל/ת</option>
-                <option value="therapist">מטפל/ת</option>
-              </select>
-            </label>
-
-            <label>
-              מזהה משתמש/ת
-              <input
-                inputMode="numeric"
-                value={userId}
-                onChange={(e) => setUserId(e.target.value)}
-                style={{ width: '100%', marginTop: 6 }}
-                disabled={isLoading}
-                required
-                placeholder="לדוגמה: 12"
-              />
-            </label>
-
-            {error ? <p style={{ color: 'crimson', margin: 0 }}>{error}</p> : null}
-
-            <button type="submit" disabled={isLoading}>
-              התחברות
-            </button>
-
+          <div className="stack">
             <p style={{ margin: 0 }}>
-              אין לכם חשבון מטופל/ת? <Link to="/register">הרשמה</Link>
+              מטפלים? מומלץ להירשם דרך <Link to="/therapist/register">אזור מטפלים</Link>.
             </p>
-            <p style={{ margin: 0 }}>
-              אתם מטפלים? <Link to="/therapist/register">יצירת פרופיל</Link>
-            </p>
-          </form>
+          </div>
         )}
       </Card>
     </div>

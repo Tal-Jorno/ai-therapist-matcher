@@ -38,16 +38,41 @@
   cursor: pointer;
   color: white;
   background: linear-gradient(135deg, var(--primary), var(--primary-2));
+  box-shadow:
+    0 16px 46px rgba(109, 40, 217, 0.22),
+    0 10px 26px rgba(37, 99, 235, 0.12);
+  transition:
+    transform var(--t-fast) var(--ease-out),
+    box-shadow var(--t-med) var(--ease-out);
+}
+
+.primaryButton:hover {
+  transform: translateY(-1px);
+  box-shadow:
+    0 20px 60px rgba(109, 40, 217, 0.26),
+    0 12px 34px rgba(37, 99, 235, 0.16);
 }
 
 .secondaryButton {
   appearance: none;
-  border: 1px solid var(--border);
-  background: color-mix(in oklab, var(--surface) 82%, transparent);
+  border: 1px solid color-mix(in oklab, var(--border) 88%, transparent);
+  background: color-mix(in oklab, var(--glass-strong) 66%, transparent);
+  backdrop-filter: blur(10px);
   color: var(--text);
   border-radius: 14px;
   padding: 10px 14px;
   cursor: pointer;
+  font-weight: 650;
+  transition:
+    transform var(--t-fast) var(--ease-out),
+    box-shadow var(--t-med) var(--ease-out),
+    border-color var(--t-med) var(--ease-out);
+}
+
+.secondaryButton:hover {
+  transform: translateY(-1px);
+  border-color: color-mix(in oklab, var(--primary) 16%, var(--border));
+  box-shadow: 0 16px 50px rgba(15, 23, 42, 0.08);
 }
 
 .primaryButton:disabled,
@@ -107,8 +132,9 @@
 }
 
 .statusBox {
-  border: 1px solid var(--border);
-  background: color-mix(in oklab, var(--surface) 80%, transparent);
+  border: 1px solid color-mix(in oklab, var(--border) 88%, transparent);
+  background: color-mix(in oklab, var(--glass-strong) 68%, transparent);
+  backdrop-filter: blur(12px);
   border-radius: 16px;
   padding: 12px;
   display: grid;
@@ -125,11 +151,12 @@
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  border: 1px solid var(--border);
+  border: 1px solid color-mix(in oklab, var(--border) 88%, transparent);
   border-radius: 999px;
   padding: 8px 10px;
   width: fit-content;
-  background: color-mix(in oklab, var(--surface2) 80%, transparent);
+  background: color-mix(in oklab, var(--glass) 70%, transparent);
+  backdrop-filter: blur(10px);
 }
 
 .dot {
@@ -179,12 +206,30 @@
 .input,
 .textarea {
   width: 100%;
-  border: 1px solid var(--border);
+  border: 1px solid color-mix(in oklab, var(--border) 88%, transparent);
   border-radius: 14px;
   padding: 10px 12px;
-  background: var(--surface);
+  background: color-mix(in oklab, var(--glass-strong) 66%, transparent);
+  backdrop-filter: blur(10px);
   color: var(--text);
   font-family: inherit;
+  outline: none;
+  transition:
+    border-color var(--t-med) var(--ease-out),
+    box-shadow var(--t-med) var(--ease-out),
+    background var(--t-med) var(--ease-out);
+}
+
+.input:hover,
+.textarea:hover {
+  border-color: color-mix(in oklab, var(--primary) 16%, var(--border));
+}
+
+.input:focus,
+.textarea:focus {
+  border-color: color-mix(in oklab, var(--primary) 55%, var(--border));
+  box-shadow: var(--ring);
+  background: color-mix(in oklab, var(--surface) 84%, transparent);
 }
 
 .textarea {
@@ -208,10 +253,11 @@
   display: inline-flex;
   align-items: center;
   gap: 10px;
-  border: 1px solid var(--border);
+  border: 1px solid color-mix(in oklab, var(--border) 88%, transparent);
   border-radius: 14px;
   padding: 10px 12px;
-  background: color-mix(in oklab, var(--surface) 82%, transparent);
+  background: color-mix(in oklab, var(--glass-strong) 66%, transparent);
+  backdrop-filter: blur(10px);
 }
 
 .errorBox {
