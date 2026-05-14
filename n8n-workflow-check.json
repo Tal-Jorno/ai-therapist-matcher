@@ -1,0 +1,125 @@
+[
+  {
+    "updatedAt": "2026-04-18T09:12:00.000Z",
+    "createdAt": "2026-03-06T10:34:32.468Z",
+    "id": "TWqHxvsNn7CXOex5",
+    "name": "My workflow",
+    "description": null,
+    "active": true,
+    "isArchived": false,
+    "nodes": [
+      {
+        "parameters": {
+          "httpMethod": "POST",
+          "path": "match",
+          "responseMode": "responseNode",
+          "options": {}
+        },
+        "type": "n8n-nodes-base.webhook",
+        "typeVersion": 2.1,
+        "position": [
+          -592,
+          -176
+        ],
+        "id": "79804149-12dd-4cd6-a728-e8395fd22fa5",
+        "name": "Webhook",
+        "webhookId": "b583f434-4643-4265-9402-683072bb2ad4"
+      },
+      {
+        "parameters": {
+          "respondWith": "json",
+          "responseBody": "={{$json}}",
+          "options": {}
+        },
+        "type": "n8n-nodes-base.respondToWebhook",
+        "typeVersion": 1.5,
+        "position": [
+          320,
+          -176
+        ],
+        "id": "fc68c6da-c954-412f-b815-f1eeb41761e4",
+        "name": "Respond to Webhook"
+      },
+      {
+        "parameters": {
+          "language": "javaScript",
+          "mode": "runOnceForAllItems",
+          "jsCode": "// Build Response Code\n// Simple heuristic extraction only (no LLM).\n// Detect: problem, city, language, therapy_type. Empty string if not detected.\n// Keep response schema stable: { assistant_message, result: { top5, reasons, extraction } }\n\nfunction clean(s) {\n  return (s ?? '').toString().replace(/\\s+/g, ' ').trim();\n}\n\nfunction lower(s) {\n  return clean(s).toLowerCase();\n}\n\nfunction uniqNonEmpty(arr) {\n  const out = [];\n  const seen = new Set();\n  for (const v of (arr ?? [])) {\n    const c = clean(v);\n    if (!c) continue;\n    const k = c.toLowerCase();\n    if (seen.has(k)) continue;\n    seen.add(k);\n    out.push(c);\n  }\n  return out;\n}\n\nconst input = $input.first().json;\nconst body = input.body ?? input;\n\n// From backend payload: { message, available_therapists, conversation, ... }\nconst message = clean(body.message ?? body.text ?? body.user_message ?? input.message ?? input.text);\nconst mL = lower(message);\n\nconst extraction = {\n  problem: '',\n  city: '',\n  language: '',\n  therapy_type: '',\n};\n\n// ---------------- language ----------------\nconst languagePatterns = [\n  { value: 'Hebrew', re: /\\b(hebrew|ivrit)\\b|עברית/iu },\n  { value: 'English', re: /\\benglish\\b|אנגלית/iu },\n  { value: 'Russian', re: /\\brussian\\b|רוסית/iu },\n  { value: 'Arabic', re: /\\barabic\\b|ערבית/iu },\n  { value: 'French', re: /\\bfrench\\b|צרפתית/iu },\n  { value: 'Spanish', re: /\\bspanish\\b|ספרדית/iu },\n];\nfor (const p of languagePatterns) {\n  if (p.re.test(message)) {\n    extraction.language = p.value;\n    break;\n  }\n}\n\n// ---------------- therapy_type ----------------\nconst therapyTypePatterns = [\n  { value: 'CBT', re: /\\bcbt\\b|קוגניטיבי\\s*התנהגותי|סי\\s*בי\\s*טי/iu },\n  { value: 'DBT', re: /\\bdbt\\b|דב\"?ט/iu },\n  { value: 'EMDR', re: /\\bemdr\\b|אי\\s*אם\\s*די\\s*אר/iu },\n  { value: 'ACT', re: /\\bact\\b|\\bacceptance\\s+and\\s+commitment\\b|אקט/iu },\n  { value: 'Couples', re: /\\b(couples|couple|marriage)\\b|טיפול\\s*זוגי/iu },\n  { value: 'Family', re: /\\bfamily\\b|טיפול\\s*משפחתי/iu },\n  { value: 'Group', re: /\\bgroup\\b|טיפול\\s*קבוצתי/iu },\n  { value: 'Psychodynamic', re: /\\bpsychodynamic\\b|פסיכודינמי/iu },\n];\nfor (const p of therapyTypePatterns) {\n  if (p.re.test(message)) {\n    extraction.therapy_type = p.value;\n    break;\n  }\n}\n\n// ---------------- city ----------------\n// Prefer matching a city that exists in the therapists list (simple & accurate).\nconst cities = uniqNonEmpty((body.available_therapists ?? []).map(t => t?.city));\n// Try longer city names first to avoid partial matches\ncities.sort((a, b) => b.length - a.length);\n\nfor (const c of cities) {\n  const cL = c.toLowerCase();\n  if (cL && mL.includes(cL)) {\n    extraction.city = c;\n    break;\n  }\n}\n\n// Fallback (English): \"in <City>\" / \"near <City>\" / \"around <City>\"\nif (!extraction.city) {\n  const m = message.match(/\\b(?:in|near|around|at)\\s+([A-Z][A-Za-z'\\-]+(?:\\s+[A-Z][A-Za-z'\\-]+){0,2})\\b/);\n  if (m) extraction.city = clean(m[1]);\n}\n\n// ---------------- problem ----------------\n// Try explicit request patterns first\n{\n  const m = message.match(/\\b(?:help|therapy|therapist|looking\\s+for)\\b[^\\n\\.]{0,50}\\b(?:for|with)\\b\\s+([^\\n\\.;]{3,140})/i);\n  if (m) extraction.problem = clean(m[1]);\n}\n\n// Keyword-based fallback (structured)\nif (!extraction.problem) {\n  const keywords = [\n    { value: 'Anxiety', re: /\\banxiety\\b|חרדה/iu },\n    { value: 'Depression', re: /\\bdepression\\b|דיכאון/iu },\n    { value: 'Stress', re: /\\bstress\\b|לחץ/iu },\n    { value: 'Burnout', re: /\\bburnout\\b|שחיקה/iu },\n    { value: 'Panic attacks', re: /\\bpanic\\b|פאניקה/iu },\n    { value: 'OCD', re: /\\bocd\\b|אובסס/iu },\n    { value: 'ADHD', re: /\\badhd\\b|קשב\\s*וריכוז|הפרעת\\s*קשב/iu },\n    { value: 'Trauma', re: /\\btrauma\\b|\\bptsd\\b|טראומה/iu },\n    { value: 'Grief', re: /\\bgrief\\b|אבל/iu },\n    { value: 'Relationship', re: /\\brelationship\\b|זוגיות/iu },\n    { value: 'Sleep', re: /\\binsomnia\\b|\\bsleep\\b|שינה/iu },\n    { value: 'Self-esteem', re: /self\\s*-?esteem|דימוי\\s*עצמי/iu },\n  ];\n\n  const hits = [];\n  for (const k of keywords) {\n    if (k.re.test(message)) hits.push(k.value);\n  }\n  if (hits.length) extraction.problem = hits.slice(0, 2).join(', ');\n}\n\n// assistant_message must use extracted values\nconst assistant_message =\n  'Extracted request: ' +\n  'problem=' + (extraction.problem || '') + ' ' +\n  'city=' + (extraction.city || '') + ' ' +\n  'language=' + (extraction.language || '') + ' ' +\n  'therapy_type=' + (extraction.therapy_type || '');\n\nreturn [\n  {\n    json: {\n      assistant_message,\n      result: {\n        top5: [],\n        reasons: [],\n        extraction,\n      },\n    },\n  },\n];\n"
+        },
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [
+          -144,
+          -176
+        ],
+        "id": "ec380956-a374-40db-8e68-49e21a686971",
+        "name": "Build Response Code"
+      }
+    ],
+    "connections": {
+      "Webhook": {
+        "main": [
+          [
+            {
+              "node": "Build Response Code",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Respond to Webhook": {
+        "main": [
+          []
+        ]
+      },
+      "Build Response Code": {
+        "main": [
+          [
+            {
+              "node": "Respond to Webhook",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      }
+    },
+    "settings": {
+      "executionOrder": "v1",
+      "binaryMode": "separate",
+      "availableInMCP": false
+    },
+    "staticData": null,
+    "meta": null,
+    "pinData": {},
+    "versionId": "56332398-b885-4a70-9f81-a9f1f9eea10a",
+    "activeVersionId": "56332398-b885-4a70-9f81-a9f1f9eea10a",
+    "versionCounter": 64,
+    "triggerCount": 1,
+    "tags": [],
+    "shared": [
+      {
+        "updatedAt": "2026-03-06T10:34:32.474Z",
+        "createdAt": "2026-03-06T10:34:32.474Z",
+        "role": "workflow:owner",
+        "workflowId": "TWqHxvsNn7CXOex5",
+        "projectId": "n6BZKVzEfBocv2ph",
+        "project": {
+          "updatedAt": "2026-03-06T10:24:30.356Z",
+          "createdAt": "2026-03-06T10:24:05.897Z",
+          "id": "n6BZKVzEfBocv2ph",
+          "name": "טל taljor123@gmail.com <taljor123@gmail.com>",
+          "type": "personal",
+          "icon": null,
+          "description": null,
+          "creatorId": "df64be7b-e435-4883-9109-d4f4ebf3fd7f"
+        }
+      }
+    ],
+    "versionMetadata": {
+      "name": "Version 096c4147",
+      "description": ""
+    }
+  }
+]

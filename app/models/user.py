@@ -12,3 +12,7 @@ class User(Base):
     full_name = Column(String, nullable=True)
 
     is_active = Column(Boolean, default=True, nullable=False)
+
+    # Email/password accounts start as unverified until user verifies via email link.
+    # Google sign-in users are created as verified.
+    email_verified = Column(Boolean, default=False, nullable=False)

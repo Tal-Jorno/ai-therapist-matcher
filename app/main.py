@@ -1,16 +1,24 @@
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy import text
 
 from app.db.base import Base
 from app.db.database import engine
+from app.db.schema_patch import apply_auth_schema_patch
 from app.models.therapist import Therapist
 from app.models.user import User  # חשוב שייטען
 from app.models.user_identity import UserIdentity  # חשוב שייטען
-
+from app.models.email_verification_code import EmailVerificationCode  # חשוב שייטען
+from app.models.password_reset_token import PasswordResetToken  # חשוב שייטען
 from app.api.therapists import router as therapists_router
 from app.api.clients import router as clients_router
-
+from app.api.auth import router as auth_router
 from app.logger_config import logger
+from app.models.match_session import MatchSession
+from app.models.match_message import MatchMessage
+from app.models.match_result import MatchResult
+from app.api.match import router as match_router
+
 
 
 logger.info("Starting AI Therapist Matcher application...")
@@ -18,10 +26,28 @@ logger.info("Starting AI Therapist Matcher application...")
 Base.metadata.create_all(bind=engine)
 logger.info("Database tables ensured.")
 
+# Apply startup-safe schema migrations for auth model/schema drift.
+apply_auth_schema_patch(engine)
+
 app = FastAPI(title="AI Therapist Matcher")
 
+# Allow the Vite dev server to call the API from the browser (CORS).
+# Without this, the browser will fail the preflight (OPTIONS) request.
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=[
+        "http://localhost:5173",
+        "http://127.0.0.1:5173",
+    ],
+    allow_credentials=False,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+app.include_router(match_router)
 app.include_router(therapists_router)
 app.include_router(clients_router)
+app.include_router(auth_router)
 
 
 @app.get("/health")

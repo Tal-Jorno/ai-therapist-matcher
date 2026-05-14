@@ -1,0 +1,38 @@
+.shell {
+  min-height: 100svh;
+  display: flex;
+  flex-direction: column;
+}
+
+.main {
+  flex: 1;
+  width: 100%;
+  max-width: var(--container);
+  margin: 0 auto;
+  padding: 26px 20px 48px;
+}
+
+.footer {
+  border-top: 1px solid color-mix(in oklab, var(--border) 85%, transparent);
+  background: color-mix(in oklab, var(--glass-strong) 68%, transparent);
+  backdrop-filter: blur(12px);
+}
+
+.footerInner {
+  width: 100%;
+  max-width: var(--container);
+  margin: 0 auto;
+  padding: 18px 20px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+:global(html[dir='rtl']) .footerInner {
+  flex-direction: row-reverse;
+}
+
+.muted {
+  color: var(--muted);
+  font-size: 14px;
+}

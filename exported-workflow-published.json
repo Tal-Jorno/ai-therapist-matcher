@@ -1,0 +1,125 @@
+[
+  {
+    "updatedAt": "2026-04-18T09:25:51.000Z",
+    "createdAt": "2026-03-06T10:34:32.468Z",
+    "id": "TWqHxvsNn7CXOex5",
+    "name": "My workflow",
+    "description": null,
+    "active": true,
+    "isArchived": false,
+    "nodes": [
+      {
+        "parameters": {
+          "httpMethod": "POST",
+          "path": "match",
+          "responseMode": "responseNode",
+          "options": {}
+        },
+        "type": "n8n-nodes-base.webhook",
+        "typeVersion": 2.1,
+        "position": [
+          -592,
+          -176
+        ],
+        "id": "79804149-12dd-4cd6-a728-e8395fd22fa5",
+        "name": "Webhook",
+        "webhookId": "b583f434-4643-4265-9402-683072bb2ad4"
+      },
+      {
+        "parameters": {
+          "respondWith": "json",
+          "responseBody": "={{$json}}",
+          "options": {}
+        },
+        "type": "n8n-nodes-base.respondToWebhook",
+        "typeVersion": 1.5,
+        "position": [
+          320,
+          -176
+        ],
+        "id": "fc68c6da-c954-412f-b815-f1eeb41761e4",
+        "name": "Respond to Webhook"
+      },
+      {
+        "parameters": {
+          "language": "javaScript",
+          "mode": "runOnceForAllItems",
+          "jsCode": "// Build Response Code\n// Heuristic extraction only (no LLM).\n// Detect: problem, city, language, therapy_type. Empty string if not detected.\n// Keep response schema stable: { assistant_message, result: { top5, reasons, extraction } }\n\nfunction clean(s) {\n  return (s ?? '').toString().replace(/\\s+/g, ' ').trim();\n}\n\nfunction lower(s) {\n  return clean(s).toLowerCase();\n}\n\nfunction uniqNonEmpty(arr) {\n  const out = [];\n  const seen = new Set();\n  for (const v of (arr ?? [])) {\n    const c = clean(v);\n    if (!c) continue;\n    const k = c.toLowerCase();\n    if (seen.has(k)) continue;\n    seen.add(k);\n    out.push(c);\n  }\n  return out;\n}\n\nfunction matchIndex(re, text) {\n  // Returns the first match index, or Infinity if no match.\n  // Note: do not use global regexes here.\n  try {\n    const m = re.exec(text);\n    return m ? m.index : Infinity;\n  } finally {\n    // Defensive: reset lastIndex if someone accidentally passed /g\n    re.lastIndex = 0;\n  }\n}\n\nfunction bestMatch(defs, text) {\n  // defs: [{ value, res: [RegExp, ...] }]\n  let bestValue = '';\n  let bestIdx = Infinity;\n  for (const d of defs) {\n    for (const re of (d.res ?? [])) {\n      const idx = matchIndex(re, text);\n      if (idx < bestIdx) {\n        bestIdx = idx;\n        bestValue = d.value;\n      }\n    }\n  }\n  return bestIdx < Infinity ? bestValue : '';\n}\n\n// ---------------- final field cleanup helpers ----------------\nconst LANG_WORDS = ['english', 'hebrew', 'ivrit', 'arabic', 'russian', 'french', 'spanish'];\n\nfunction cleanCityValue(s) {\n  let x = clean(s);\n  if (!x) return '';\n\n  // Cut city if user continues the sentence: \"Tel Aviv who speaks English\" -> \"Tel Aviv\"\n  x = x.replace(/\\s+\\b(?:who|that|which|for|with|therapist|therapy|counsel(?:or|ing)?|psycholog(?:ist|y)|speaks?|speaking)\\b[\\s\\S]*$/iu, '');\n  // \"in English\" is commonly appended and should not be part of the city\n  x = x.replace(/\\s+\\bin\\s+\\b(?:english|hebrew|ivrit|arabic|russian|french|spanish)\\b[\\s\\S]*$/iu, '');\n  x = x.replace(/[\\.,;:!\\?\\)\\]]+$/g, '');\n  x = clean(x);\n\n  // Remove trailing connector words if they remain at the end\n  let parts = x.split(' ').filter(Boolean);\n  while (parts.length && /^(?:in|near|around|from|for|with|at|on|of)$/iu.test(parts[parts.length - 1])) parts.pop();\n  x = clean(parts.join(' '));\n\n  const xL = x.toLowerCase();\n  if (!x) return '';\n  if (LANG_WORDS.includes(xL)) return '';\n  if (x.length < 2) return '';\n  return x;\n}\n\nfunction cleanProblemFallbackText(raw) {\n  let fb = clean(raw);\n  if (!fb) return '';\n\n  // Remove leading boilerplate but keep the actual problem description.\n  fb = fb.replace(/^\\b(?:i\\s*am|i'm|im|we\\s*are|we're|were|we)\\s+(?:looking\\s+for|searching\\s+for|seeking)\\b\\s*/iu, '');\n  fb = fb.replace(/^\\b(?:i|we)\\s+(?:need|want)\\b\\s*/iu, '');\n  fb = fb.replace(/^\\b(?:looking\\s+for|searching\\s+for|seeking)\\b\\s*/iu, '');\n  fb = fb.replace(/^\\b(?:find\\s+me|get\\s+me)\\b\\s*/iu, '');\n\n  // Remove therapist/therapy words (and optional preceding article)\n  fb = fb.replace(/\\b(?:a|an|the)\\s+(?:therapist|therapy|counsel(?:or|ing)?|psycholog(?:ist|y)|psychotherapy)\\b/igu, ' ');\n  fb = fb.replace(/\\b(?:therapist|therapy|counsel(?:or|ing)?|psycholog(?:ist|y)|psychotherapy)\\b/igu, ' ');\n\n  // Remove language mentions\n  fb = fb.replace(/\\b(in\\s+)?(english|hebrew|ivrit|arabic|russian|french|spanish)\\b/igu, ' ');\n  fb = fb.replace(/אנגלית|עברית|ערבית|רוסית|צרפתית|ספרדית/gu, ' ');\n  // Remove therapy type mentions\n  fb = fb.replace(/\\b(cbt|emdr|psychodynamic|mindfulness|mbsr|mbct)\\b/igu, ' ');\n  fb = fb.replace(/קוגניטיבי\\s*התנהגותי|טיפול\\s*זוגי|טיפול\\s*משפחתי|פסיכודינמי|מיינדפולנס/gu, ' ');\n  // Remove simple location phrase\n  fb = fb.replace(/\\b(?:in|near|around|from)\\s+[A-Za-z][A-Za-z'\\-]*(?:\\s+[A-Za-z][A-Za-z'\\-]*){0,3}\\b/igu, ' ');\n\n  // Remove leftover filler words\n  fb = fb.replace(/\\b(?:please|pls|thanks|thank\\s+you)\\b/igu, ' ');\n  fb = clean(fb);\n  fb = fb.replace(/^(?:for|with|about|regarding)\\s+/iu, '');\n  fb = fb.replace(/\\s+(?:please|pls)$/iu, '');\n  fb = clean(fb);\n\n  if (fb.length > 140) fb = clean(fb.slice(0, 140));\n\n  // If it's too short / meaningless, return empty.\n  const words = fb.split(' ').filter(Boolean);\n  if (words.length <= 1) return '';\n  if (/^(?:i|me|my|mine|we|us|our)$/iu.test(fb)) return '';\n  return fb;\n}\n\nconst input = $input.first().json;\nconst body = input.body ?? input;\n\n// From backend payload: { message, available_therapists, conversation, ... }\nconst message = clean(body.message ?? body.text ?? body.user_message ?? input.message ?? input.text);\nconst mL = lower(message);\n\nconst extraction = {\n  problem: '',\n  city: '',\n  language: '',\n  therapy_type: '',\n};\n\n// ---------------- language ----------------\nconst languageDefs = [\n  {\n    value: 'English',\n    res: [\n      /\\b(english)\\b/iu,\n      /\\b(in|speak|speaking|prefer|preferred)\\s+english\\b/iu,\n      /\\benglish\\s*(please|pls)\\b/iu,\n      /אנגלית|באנגלית/iu,\n    ],\n  },\n  {\n    value: 'Hebrew',\n    res: [\n      /\\b(hebrew|ivrit)\\b/iu,\n      /\\b(in|speak|speaking|prefer|preferred)\\s+(hebrew|ivrit)\\b/iu,\n      /עברית|בעברית/iu,\n    ],\n  },\n  {\n    value: 'Arabic',\n    res: [\n      /\\b(arabic)\\b/iu,\n      /\\b(in|speak|speaking|prefer|preferred)\\s+arabic\\b/iu,\n      /ערבית|בערבית/iu,\n      /\\bعربي\\b|باللغة\\s*العربية|العربية/iu,\n    ],\n  },\n  {\n    value: 'Russian',\n    res: [\n      /\\b(russian)\\b/iu,\n      /\\b(in|speak|speaking|prefer|preferred)\\s+russian\\b/iu,\n      /רוסית|ברוסית/iu,\n      /русск(ий|ого|ом)|по-русски|на\\s+русском/iu,\n    ],\n  },\n  {\n    value: 'French',\n    res: [\n      /\\b(french)\\b/iu,\n      /\\b(in|speak|speaking|prefer|preferred)\\s+french\\b/iu,\n      /צרפתית|בצרפתית/iu,\n      /fran[çc]ais|en\\s+fran[çc]ais/iu,\n    ],\n  },\n  {\n    value: 'Spanish',\n    res: [\n      /\\b(spanish)\\b/iu,\n      /\\b(in|speak|speaking|prefer|preferred)\\s+spanish\\b/iu,\n      /ספרדית|בספרדית/iu,\n      /espa[ñn]ol|en\\s+espa[ñn]ol/iu,\n    ],\n  },\n];\n\nextraction.language = bestMatch(languageDefs, message);\n\n// ---------------- therapy_type ----------------\n// Only these values are allowed per current response contract.\nconst therapyTypeDefs = [\n  {\n    value: 'CBT',\n    res: [\n      /\\bcbt\\b/iu,\n      /\\bcognitive\\s*(behavior(al)?|behaviour(al)?)\\b/iu,\n      /קוגניטיבי\\s*התנהגותי|סי\\s*בי\\s*טי/iu,\n    ],\n  },\n  {\n    value: 'Psychodynamic',\n    res: [\n      /\\bpsychodynamic\\b/iu,\n      /\\bpsycho\\s*-?dynamic\\b/iu,\n      /פסיכודינמי/iu,\n    ],\n  },\n  {\n    value: 'Couples Therapy',\n    res: [\n      /\\b(couples?|marriage)\\s+(therapy|counsel(ing)?)\\b/iu,\n      /\\b(couples?|couple|marriage)\\b/iu,\n      /טיפול\\s*זוגי/iu,\n    ],\n  },\n  {\n    value: 'Family Therapy',\n    res: [\n      /\\bfamily\\s+(therapy|counsel(ing)?)\\b/iu,\n      /טיפול\\s*משפחתי/iu,\n    ],\n  },\n  {\n    value: 'Trauma Therapy',\n    res: [\n      /\\btrauma\\s+therapy\\b/iu,\n      /\\b(ptsd|cptsd)\\b/iu,\n      /\\btrauma\\b/iu,\n      /טראומ(ה|טי)/iu,\n    ],\n  },\n  {\n    value: 'EMDR',\n    res: [\n      /\\bemdr\\b/iu,\n      /eye\\s*movement\\s*desensitization\\s*and\\s*reprocessing/iu,\n      /אי\\s*אם\\s*די\\s*אר/iu,\n    ],\n  },\n  {\n    value: 'Mindfulness-Based Therapy',\n    res: [\n      /\\bmindfulness\\b/iu,\n      /\\b(mbsr|mbct)\\b/iu,\n      /mindfulness\\s*-?based/iu,\n      /מיינדפולנס|קשיבות/iu,\n    ],\n  },\n];\n\nextraction.therapy_type = bestMatch(therapyTypeDefs, message);\n\n// ---------------- city ----------------\n// Prefer matching a city that exists in the therapists list (simple & accurate).\nconst cities = uniqNonEmpty((body.available_therapists ?? []).map(t => t?.city));\n// Try longer city names first to avoid partial matches\ncities.sort((a, b) => b.length - a.length);\n\nfor (const c of cities) {\n  const cL = c.toLowerCase();\n  if (cL && mL.includes(cL)) {\n    extraction.city = c;\n    break;\n  }\n}\n\n// Fallback (English): \"in <city>\" / \"near <city>\" / \"around <city>\" / \"from <city>\"\nif (!extraction.city) {\n  const m = message.match(/\\b(?:in|near|around|from)\\s+([A-Za-z][A-Za-z'\\-]*(?:\\s+[A-Za-z][A-Za-z'\\-]*){0,3})\\b/i);\n  if (m) {\n    const candidate = clean(m[1]).replace(/[\\.,;:!\\?\\)\\]]+$/g, '');\n    // Avoid confusing language words (\"in English\") with cities\n    const candidateL = candidate.toLowerCase();\n    const isLanguageWord = LANG_WORDS.includes(candidateL);\n    if (candidate && !isLanguageWord) extraction.city = candidate;\n  }\n}\n\n// Final city cleanup (applies to both the therapists-list match and fallback regex)\nextraction.city = cleanCityValue(extraction.city);\n\n// ---------------- problem ----------------\n// Structured categories from keyword heuristics.\n// Must remain a string in extraction.problem.\nconst problemDefs = [\n  {\n    value: 'Anxiety',\n    res: [\n      /\\b(anxiety|anxious|worry|overthinking)\\b/iu,\n      /\\bpanic(\\s+attacks?)?\\b/iu,\n      /חרד(ה|הים|ות)|פאניק(ה|ות)/iu,\n    ],\n  },\n  {\n    value: 'Depression',\n    res: [\n      /\\b(depression|depressed|low\\s+mood)\\b/iu,\n      /דיכאון|דיכאוני/iu,\n    ],\n  },\n  {\n    value: 'Trauma',\n    res: [\n      /\\b(ptsd|cptsd)\\b/iu,\n      /\\btrauma(tic)?\\b/iu,\n      /טראומ(ה|טי)/iu,\n    ],\n  },\n  {\n    value: 'Relationship Issues',\n    res: [\n      /\\b(relationship|partner|boyfriend|girlfriend|spouse|marriage)\\b/iu,\n      /\\b(break\\s*up|divorce|separation|infidelity|cheating)\\b/iu,\n      /זוגיות|פרידה|גירושין|בגידה/iu,\n    ],\n  },\n  {\n    value: 'Family Issues',\n    res: [\n      /\\b(family|parents?|mother|father|siblings?|in-?laws)\\b/iu,\n      /\\b(parenting|family\\s+conflict)\\b/iu,\n      /משפחה|הורים|אמא|אבא|אחים|אחיות|חמי|חמות/iu,\n    ],\n  },\n  {\n    value: 'Self-Esteem',\n    res: [\n      /\\b(self\\s*-?esteem|self\\s*-?worth|confidence)\\b/iu,\n      /דימוי\\s*עצמי|ביטחון\\s*עצמי/iu,\n    ],\n  },\n  {\n    value: 'Eating Disorders',\n    res: [\n      /\\b(eating\\s+disorder|anorexia|bulimia|binge\\s*eating)\\b/iu,\n      /הפרעת\\s*אכילה|אנורקסיה|בולימיה|בולמי/iu,\n    ],\n  },\n  {\n    value: 'OCD',\n    res: [\n      /\\bocd\\b/iu,\n      /\\bobsessive\\s+compulsive\\b/iu,\n      /אובסס|קומפולס/iu,\n    ],\n  },\n  {\n    value: 'ADHD',\n    res: [\n      /\\badhd\\b/iu,\n      /\\badd\\b/iu,\n      /\\battention\\s+deficit\\b/iu,\n      /קשב\\s*וריכוז|הפרעת\\s*קשב/iu,\n    ],\n  },\n  {\n    value: 'Grief',\n    res: [\n      /\\b(grief|bereave(d|ment)|loss|mourning)\\b/iu,\n      /אבל|אובדן|שכול/iu,\n    ],\n  },\n];\n\n// Pick up to 2 categories, ordered by first appearance in the message.\n{\n  const hits = [];\n  for (const d of problemDefs) {\n    let idx = Infinity;\n    for (const re of (d.res ?? [])) idx = Math.min(idx, matchIndex(re, message));\n    if (idx < Infinity) hits.push({ value: d.value, idx });\n  }\n  hits.sort((a, b) => a.idx - b.idx);\n  const picked = uniqNonEmpty(hits.map(h => h.value)).slice(0, 2);\n  if (picked.length) extraction.problem = picked.join(', ');\n}\n\n// Fallback: if no structured problem found, use a cleaned version of the message.\nif (!extraction.problem) {\n  extraction.problem = cleanProblemFallbackText(message);\n}\n\n// ---------------- therapist matching ----------------\n// Use available_therapists[] + extracted fields to produce:\n// - result.top5 = top 5 matched therapists\n// - result.reasons = short reasons aligned to top5 order\n\nconst therapists = Array.isArray(body.available_therapists) ? body.available_therapists : [];\n\nconst reqCity = clean(extraction.city);\nconst reqLanguage = clean(extraction.language);\nconst reqTherapy = clean(extraction.therapy_type);\nconst reqProblem = clean(extraction.problem);\n\nfunction norm(s) {\n  return lower(s).replace(/[^\\p{L}\\p{N}]+/gu, ' ').trim();\n}\nfunction inc(h, n) {\n  h = norm(h);\n  n = norm(n);\n  return !!h && !!n && h.includes(n);\n}\nfunction cityMatch(a, b) {\n  a = norm(a);\n  b = norm(b);\n  return !!a && !!b && (a === b || a.includes(b) || b.includes(a));\n}\n\nconst probSyn = {\n  'Anxiety': ['anxiety', 'anxious', 'panic', 'worry', 'overthinking', 'חרדה', 'פאניק'],\n  'Depression': ['depression', 'depressed', 'low mood', 'דיכאון'],\n  'Trauma': ['trauma', 'ptsd', 'cptsd', 'טראומ'],\n  'Relationship Issues': ['relationship', 'relationships', 'partner', 'marriage', 'break up', 'divorce', 'זוגיות', 'גירושין', 'פרידה'],\n  'Family Issues': ['family', 'parents', 'parenting', 'mother', 'father', 'משפחה', 'הורים'],\n  'Self-Esteem': ['self esteem', 'self-esteem', 'confidence', 'self worth', 'דימוי עצמי', 'ביטחון עצמי'],\n  'Eating Disorders': ['eating disorder', 'anorexia', 'bulimia', 'binge', 'הפרעת אכילה', 'אנורקסיה', 'בולימיה'],\n  'OCD': ['ocd', 'obsessive', 'compulsive', 'אובסס', 'קומפולס'],\n  'ADHD': ['adhd', 'add', 'attention deficit', 'קשב', 'ריכוז'],\n  'Grief': ['grief', 'bereavement', 'loss', 'mourning', 'אבל', 'אובדן', 'שכול'],\n};\n\nfunction partsCSV(s) {\n  return uniqNonEmpty(clean(s).split(',').map(x => clean(x)));\n}\n\nfunction problemMatch(text) {\n  const parts = partsCSV(reqProblem);\n  if (!parts.length) return false;\n  for (const p of parts) {\n    const syns = probSyn[p] ?? [p];\n    for (const s of syns) {\n      if (inc(text, s)) return true;\n    }\n  }\n  if (parts.length === 1 && parts[0].length >= 4) return inc(text, parts[0]);\n  return false;\n}\n\nfunction topItem(t) {\n  return {\n    ...t,\n    user_id: t?.user_id,\n    full_name: t?.full_name,\n    specialization: t?.specialization,\n    languages: t?.languages ?? null,\n    city: t?.city ?? null,\n    is_online: Boolean(t?.is_online),\n    price_per_session: t?.price_per_session ?? null,\n  };\n}\n\nfunction mkReason(f) {\n  // Build a specific short reason from actual score contributions.\n  const p = partsCSV(reqProblem)[0] || reqProblem;\n  const clauses = [];\n\n  if (reqCity) {\n    if (f.city) clauses.push(`City match (${reqCity})`);\n    else if (f.online) clauses.push('Online option (no city match)');\n  }\n\n  if (reqLanguage && f.language) clauses.push(`Language match (${reqLanguage})`);\n  if (reqTherapy && f.therapy) clauses.push(`Therapy fit (${reqTherapy})`);\n  if (reqProblem && f.problem) clauses.push(`Focus on ${p}`);\n\n  // If we have almost no positive signals, still return something helpful.\n  if (!clauses.length) {\n    if (reqLanguage) return 'Good availability; language fit is less certain';\n    if (reqCity) return 'Broader match; consider online or nearby options';\n    return 'Broader match based on current availability';\n  }\n\n  // If we matched city but missed therapy/problem, call that out.\n  const missingNeed = (reqTherapy && !f.therapy) || (reqProblem && !f.problem);\n  if (f.city && missingNeed) clauses.push('Broader therapeutic fit');\n\n  // Keep reasons compact (ASCII only).\n  const reason = clauses.join(', ');\n  return reason.length > 95 ? reason.slice(0, 92).trim() + '...' : reason;\n}\n\nconst scored = therapists.map((t, i) => {\n  let s = 0;\n  // Track contributions so reasons are aligned to actual scoring.\n  const f = {\n    city: false,\n    language: false,\n    therapy: false,\n    problem: false,\n    online: false,\n    cityPts: 0,\n    langPts: 0,\n    therapyPts: 0,\n    problemPts: 0,\n    onlinePts: 0,\n  };\n  const text = [t?.specialization, t?.bio].filter(Boolean).join(' | ');\n\n  if (reqCity) {\n    if (cityMatch(t?.city, reqCity)) {\n      s += 4;\n      f.city = true;\n      f.cityPts = 4;\n    } else if (t?.is_online) {\n      s += 1;\n      f.online = true;\n      f.onlinePts = 1;\n    }\n  }\n\n  if (reqLanguage && inc(t?.languages, reqLanguage)) {\n    s += 3;\n    f.language = true;\n    f.langPts = 3;\n  }\n\n  if (reqTherapy && inc(text, reqTherapy)) {\n    s += 4;\n    f.therapy = true;\n    f.therapyPts = 4;\n  }\n\n  if (reqProblem && problemMatch(text)) {\n    s += 3;\n    f.problem = true;\n    f.problemPts = 3;\n  }\n\n  return { i, t, s, f };\n});\n\nscored.sort((a, b) => (b.s - a.s) || (a.i - b.i));\n\nconst top = scored.slice(0, 5);\nconst top5 = top.map(x => topItem(x.t));\nconst reasons = top.map(x => mkReason(x.f));\nconst best = top.length ? (top[0].s ?? 0) : 0;\n\n// ---------------- assistant_message quality ----------------\nconst therapistCount = therapists.length;\n\n// Compute how \"strong\" a match could be given what the user provided.\nconst maxPossible =\n  (reqCity ? 4 : 0) +\n  (reqLanguage ? 3 : 0) +\n  (reqTherapy ? 4 : 0) +\n  (reqProblem ? 3 : 0);\n\nconst strongThreshold = Math.max(4, Math.ceil(maxPossible * 0.65));\nconst isStrong = maxPossible > 0 ? best >= strongThreshold : best > 0;\nconst isBroad = therapistCount > 0 && (best === 0 || (maxPossible >= 6 && best < Math.ceil(maxPossible * 0.25)));\n\nconst missing = [];\nif (!reqCity) missing.push('city');\nif (!reqLanguage) missing.push('language');\nif (!reqTherapy) missing.push('therapy type');\nif (!reqProblem) missing.push('main concern');\n\nlet assistant_message = '';\nif (therapistCount === 0) {\n  assistant_message = 'No therapists are available right now. Please try again later.';\n} else if (!top5.length) {\n  assistant_message = 'I could not find matches from the current list based on your request.';\n} else if (isBroad) {\n  assistant_message = `I found ${top5.length} broader match${top5.length === 1 ? '' : 'es'} based on what's currently available.`;\n} else {\n  assistant_message = `I found ${top5.length} therapist${top5.length === 1 ? '' : 's'} that may fit your request based on your preferences and therapeutic needs.`;\n}\n\n// Optionally mention missing info (only when it would help refine matching).\nif (missing.length && therapistCount > 0 && top5.length && !isStrong) {\n  assistant_message += ` Sharing your ${missing.slice(0, 2).join(' and ')} could help narrow this down.`;\n}\n\nreturn [{ json: { assistant_message, result: { top5, reasons, extraction } } }];\n"
+        },
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [
+          -144,
+          -176
+        ],
+        "id": "ec380956-a374-40db-8e68-49e21a686971",
+        "name": "Build Response Code"
+      }
+    ],
+    "connections": {
+      "Webhook": {
+        "main": [
+          [
+            {
+              "node": "Build Response Code",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Respond to Webhook": {
+        "main": [
+          []
+        ]
+      },
+      "Build Response Code": {
+        "main": [
+          [
+            {
+              "node": "Respond to Webhook",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      }
+    },
+    "settings": {
+      "executionOrder": "v1",
+      "binaryMode": "separate",
+      "availableInMCP": false
+    },
+    "staticData": null,
+    "meta": null,
+    "pinData": {},
+    "versionId": "999096ca-936a-42fe-98c9-cbdfeed5b642",
+    "activeVersionId": "999096ca-936a-42fe-98c9-cbdfeed5b642",
+    "versionCounter": 63,
+    "triggerCount": 1,
+    "tags": [],
+    "shared": [
+      {
+        "updatedAt": "2026-03-06T10:34:32.474Z",
+        "createdAt": "2026-03-06T10:34:32.474Z",
+        "role": "workflow:owner",
+        "workflowId": "TWqHxvsNn7CXOex5",
+        "projectId": "n6BZKVzEfBocv2ph",
+        "project": {
+          "updatedAt": "2026-03-06T10:24:30.356Z",
+          "createdAt": "2026-03-06T10:24:05.897Z",
+          "id": "n6BZKVzEfBocv2ph",
+          "name": "טל taljor123@gmail.com <taljor123@gmail.com>",
+          "type": "personal",
+          "icon": null,
+          "description": null,
+          "creatorId": "df64be7b-e435-4883-9109-d4f4ebf3fd7f"
+        }
+      }
+    ],
+    "versionMetadata": {
+      "name": "Version 096c4147",
+      "description": ""
+    }
+  }
+]
