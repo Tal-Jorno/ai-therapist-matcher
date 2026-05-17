@@ -30,8 +30,9 @@ export function TherapistRegisterPage() {
     setIsLoading(true)
     setError(null)
     try {
-      const session = await authApi.registerTherapist({
+      const { session } = await authApi.registerTherapistEmail({
         email: email.trim(),
+        password: 'TempPass123!',
         full_name: fullName.trim(),
         specialization: specialization.trim(),
         city,
